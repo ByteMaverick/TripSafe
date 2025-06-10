@@ -1,0 +1,96 @@
+# Preprocessing On Bash
+
+    # Number of Columns
+    1  head -n 1 US_Accidents.csv | awk -F ',' '{print NF}'
+    # return: 48
+     
+    # Number of rows
+    2  tail -n +2 US_Accidents.csv| wc -l
+    # return: 7728394
+    
+    # Print all the columns 
+    3   head -n 1 US_Accidents.csv
+    # returns columns
+    
+    # Print datapoint count based on State
+    4  awk -F',' 'NR>1 {print $15}' US_Accidents.csv | sort | uniq -c | sort
+    # return: datapoint count distribution for all states, California with the most accidents/datapoints
+    
+    # Since our focus is California
+    5 awk -F',' 'NR==1 || $15 == "CA"' US_Accidents.csv > CA_Accidents.csv
+    # Saves the only the california datapoints into CA_Accidents.csv
+   
+    # Number of Columns
+    6  head -n 1 CA_Accidents.csv | awk -F ',' '{print NF}'
+    # return: 48 
+    
+    # Number of rows
+    7   tail -n +2 CA_Accidents.csv| wc -l
+    # return: 1741432
+    
+    # Check for duplicates
+    8  tail -n +2 CA_Accidents.csv | sort | uniq -d | wc -l
+    # return: 0 (Suspicious, confirm of python later)
+    
+    # Removes rows with more than 9 missing values
+    9  awk -F',' 'NR>1 {                                                     
+    empty = 0
+    for (i = 1; i <= NF; i++) if ($i == "") empty++
+    if (empty > 9) count++
+    }
+    END { print "Rows with more than 9 empty fields:", count }' CA_Accidents.csv
+    # return: Rows with more than 9 empty fields: 33151
+    
+    
+    # Remove these rows 
+    10  awk -F',' 'NR==1 { print; next }
+    {
+    empty = 0
+    for (i = 1; i <= NF; i++) if ($i == "") empty++
+    if (empty <= 9) print
+    }' CA_Accidents.csv > temp.csv
+    # removes rows with 9 or more NaN columns
+    
+    # Confirm the removal
+    11  awk -F',' 'NR>1 {                                                     
+    empty = 0
+    for (i = 1; i <= NF; i++) if ($i == "") empty++
+    if (empty > 9) count++
+    }
+    END { print "Rows with more than 9 empty fields:", count }' temp.csv
+    # return: Nothing(Indicating successful removal)
+    
+    # Move the temp.csv data back to CA_Accidents.cs
+    12  mv temp.csv  CA_Accidents.csv
+   
+   
+
+    # Initial Target Column Severity
+    # Check wheather the dataset is balanced or not 
+     
+    # Count Unique Values in Severity Column:f3
+    13  tail -n +2 CA_Accidents.csv | cut -d',' -f3 | sort | uniq| wc -l
+    # return: 4
+     
+    # Value Count for 1
+    14  tail -n +2 CA_Accidents.csv | cut -d',' -f3 | sort| grep '^1$' | wc -l
+    # return: 10118
+    
+    # Value Count for 2
+    15  tail -n +2 CA_Accidents.csv | cut -d',' -f3 | sort| grep '^2$' | wc -l
+    # return: 1417873
+    
+    # Value Count for 3
+    16  tail -n +2 CA_Accidents.csv | cut -d',' -f3 | sort| grep '^3$' | wc -l
+    # return: 267548 
+    
+    # Value Count for 4
+    17  tail -n +2 CA_Accidents.csv | cut -d',' -f3 | sort| grep '^4$' | wc -l
+    # return: 12742
+    
+    
+    # Conclusion: The dataset is highly unbalanced.
+    
+    
+    # Save all the Commands
+    18  history>cmds.log
