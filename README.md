@@ -1,2 +1,2 @@
 # TripSafe
-[📄 View Report](./assets/Trip.pdf)
+[📄 View Report](./TripSafeReport.pdf)
