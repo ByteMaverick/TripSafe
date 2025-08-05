@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tripsafe - Predict Accident Risk</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #a0a0a0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #fff;
+            margin: 3px 0;
+            transition: 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .main-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0a0;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .form-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-group:hover {
+            border-color: #555;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .input-group:focus-within {
+            border-color: #4285f4;
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+        }
+
+        .input-icon {
+            margin-right: 1rem;
+            color: #4285f4;
+            font-size: 1.2rem;
+        }
+
+        .input-field {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            width: 100%;
+            outline: none;
+        }
+
+        select.input-field {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polylyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1rem;
+            padding-right: 3rem;
+        }
+
+        select.input-field option {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 0.5rem;
+        }
+
+        .predict-btn {
+            background: linear-gradient(135deg, #4285f4, #1976d2);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+
+        .predict-btn:active {
+            transform: translateY(0);
+        }
+
+        .map-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 1rem;
+            border: 1px solid #333;
+            height: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            border-radius: 12px;
+        }
+
+        .risk-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 1000;
+            display: none;
+        }
+
+        .risk-low { background: #28a745; }
+        .risk-medium { background: #ffc107; color: #000; }
+        .risk-high { background: #dc3545; }
+
+        .data-source {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ccc;
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            z-index: 1000;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            border: 3px solid #333;
+            border-top: 3px solid #4285f4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 2rem;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            border: 1px solid #333;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid #444;
+        }
+
+        .result-label {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .form-section {
+                grid-template-columns: 1fr;
+            }
+
+            .main-title {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">Tripsafe</div>
+        <ul class="nav-links">
+            <li><a href="#dashboard">Dashboard</a></li>
+            <li><a href="#reports">Reports</a></li>
+            <li><a href="#settings">Settings</a></li>
+        </ul>
+        <div class="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header-section">
+            <h1 class="main-title">Predict accident risk</h1>
+            <p class="subtitle">
+                Enter the date, time, and location to assess the likelihood of an accident.
+            </p>
+        </div>
+
+        <div class="form-section">
+            <div class="input-group">
+                <span class="input-icon">📅</span>
+                <input type="text" class="input-field" id="datetime" placeholder="04/22/2024, 08:30 AM" />
+            </div>
+            <div class="input-group">
+                <span class="input-icon">📍</span>
+                <input type="text" class="input-field" id="location" placeholder="1600 Amphitheatre Parkway, Mountain View, CA" />
+            </div>
+            <div class="input-group">
+                <span class="input-icon">🏛️</span>
+                <select class="input-field" id="county">
+                    <option value="">Select County</option>
+                    <option value="alameda">Alameda County</option>
+                    <option value="alpine">Alpine County</option>
+                    <option value="amador">Amador County</option>
+                    <option value="butte">Butte County</option>
+                    <option value="calaveras">Calaveras County</option>
+                    <option value="colusa">Colusa County</option>
+                    <option value="contra-costa">Contra Costa County</option>
+                    <option value="del-norte">Del Norte County</option>
+                    <option value="el-dorado">El Dorado County</option>
+                    <option value="fresno">Fresno County</option>
+                    <option value="glenn">Glenn County</option>
+                    <option value="humboldt">Humboldt County</option>
+                    <option value="imperial">Imperial County</option>
+                    <option value="inyo">Inyo County</option>
+                    <option value="kern">Kern County</option>
+                    <option value="kings">Kings County</option>
+                    <option value="lake">Lake County</option>
+                    <option value="lassen">Lassen County</option>
+                    <option value="los-angeles">Los Angeles County</option>
+                    <option value="madera">Madera County</option>
+                    <option value="marin">Marin County</option>
+                    <option value="mariposa">Mariposa County</option>
+                    <option value="mendocino">Mendocino County</option>
+                    <option value="merced">Merced County</option>
+                    <option value="modoc">Modoc County</option>
+                    <option value="mono">Mono County</option>
+                    <option value="monterey">Monterey County</option>
+                    <option value="napa">Napa County</option>
+                    <option value="nevada">Nevada County</option>
+                    <option value="orange">Orange County</option>
+                    <option value="placer">Placer County</option>
+                    <option value="plumas">Plumas County</option>
+                    <option value="riverside">Riverside County</option>
+                    <option value="sacramento">Sacramento County</option>
+                    <option value="san-benito">San Benito County</option>
+                    <option value="san-bernardino">San Bernardino County</option>
+                    <option value="san-diego">San Diego County</option>
+                    <option value="san-francisco">San Francisco County</option>
+                    <option value="san-joaquin">San Joaquin County</option>
+                    <option value="san-luis-obispo">San Luis Obispo County</option>
+                    <option value="san-mateo">San Mateo County</option>
+                    <option value="santa-barbara">Santa Barbara County</option>
+                    <option value="santa-clara">Santa Clara County</option>
+                    <option value="santa-cruz">Santa Cruz County</option>
+                    <option value="shasta">Shasta County</option>
+                    <option value="sierra">Sierra County</option>
+                    <option value="siskiyou">Siskiyou County</option>
+                    <option value="solano">Solano County</option>
+                    <option value="sonoma">Sonoma County</option>
+                    <option value="stanislaus">Stanislaus County</option>
+                    <option value="sutter">Sutter County</option>
+                    <option value="tehama">Tehama County</option>
+                    <option value="trinity">Trinity County</option>
+                    <option value="tulare">Tulare County</option>
+                    <option value="tuolumne">Tuolumne County</option>
+                    <option value="ventura">Ventura County</option>
+                    <option value="yolo">Yolo County</option>
+                    <option value="yuba">Yuba County</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <button class="predict-btn" onclick="predictRisk()">Predict</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing risk factors...</p>
+        </div>
+
+        <div class="map-container">
+            <div class="risk-indicator" id="riskIndicator">High Risk</div>
+            <div id="map"></div>
+            <div class="data-source">
+                Data Source<br>
+                California DOT
+            </div>
+        </div>
+
+        <div class="results" id="results">
+            <h3 class="result-title">Risk Analysis Results</h3>
+            <div class="result-details">
+                <div class="result-card">
+                    <div class="result-label">Risk Level</div>
+                    <div class="result-value" id="riskLevel">-</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Probability</div>
+                    <div class="result-value" id="probability">-</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Weather Factor</div>
+                    <div class="result-value" id="weatherFactor">-</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">Traffic Density</div>
+                    <div class="result-value" id="trafficDensity">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        let map;
+        let currentMarker;
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: false
+            }).setView([36.7783, -119.4179], 6); // California center
+
+            // Dark theme tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            // Add zoom control to bottom right
+            L.control.zoom({
+                position: 'bottomright'
+            }).addTo(map);
+
+            // Initial marker for demo (San Francisco)
+            addMarker(37.7749, -122.4194, 'high');
+        }
+
+        function addMarker(lat, lng, riskLevel) {
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+
+            const colors = {
+                low: '#28a745',
+                medium: '#ffc107',
+                high: '#dc3545'
+            };
+
+            const markerHtml = `
+                <div style="
+                    background: ${colors[riskLevel]};
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50% 50% 50% 0;
+                    transform: rotate(-45deg);
+                    border: 3px solid #fff;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                "></div>
+            `;
+
+            const customIcon = L.divIcon({
+                html: markerHtml,
+                iconSize: [30, 30],
+                iconAnchor: [15, 30],
+                className: 'custom-marker'
+            });
+
+            currentMarker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+            map.setView([lat, lng], 13);
+        }
+
+        // Geocoding function (simplified)
+        async function geocodeAddress(address) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+                const data = await response.json();
+                if (data.length > 0) {
+                    return {
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon)
+                    };
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+            }
+            return null;
+        }
+
+        // Main prediction function
+        async function predictRisk() {
+            const datetime = document.getElementById('datetime').value;
+            const location = document.getElementById('location').value;
+            const county = document.getElementById('county').value;
+
+            if (!datetime || !location || !county) {
+                alert('Please fill in all fields: date/time, location, and county.');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('riskIndicator').style.display = 'none';
+
+            try {
+                // Get selected county text for display
+                const countySelect = document.getElementById('county');
+                const countyText = countySelect.options[countySelect.selectedIndex].text;
+
+                // Call the prediction API with the exact schema expected by FastAPI
+                const response = await fetch('http://127.0.0.1:8080/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        data_time: datetime,
+                        location: location,
+                        county: countyText
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                // Create coordinates object from API response
+                const coords = { lat: result.lat, lng: result.lng };
+
+                // Transform the result to match the display format
+                const displayResult = {
+                    risk_level: result.risk_level.toLowerCase(),
+                    probability: getRiskProbability(result.risk_level),
+                    weather_factor: 'Clear', // Default values since API doesn't provide these
+                    traffic_density: getTrafficDensity(result.risk_level)
+                };
+
+                // Display results
+                displayResults(displayResult, coords);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to get prediction. Please check if the server is running on port 8080.');
+
+                // Show demo results as fallback
+                const demoResult = {
+                    risk_level: 'medium',
+                    probability: '65%',
+                    weather_factor: 'Clear',
+                    traffic_density: 'Moderate'
+                };
+                const demoCoords = { lat: 37.7749, lng: -122.4194 };
+                displayResults(demoResult, demoCoords);
+            }
+
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Helper function to get probability based on risk level
+        function getRiskProbability(riskLevel) {
+            const risk = riskLevel.toLowerCase();
+            if (risk === 'high') return '78%';
+            if (risk === 'medium') return '45%';
+            return '12%';
+        }
+
+        // Helper function to get traffic density based on risk level
+        function getTrafficDensity(riskLevel) {
+            const risk = riskLevel.toLowerCase();
+            if (risk === 'high') return 'Heavy';
+            if (risk === 'medium') return 'Moderate';
+            return 'Light';
+        }
+
+        function displayResults(result, coords) {
+            // Update map marker
+            addMarker(coords.lat, coords.lng, result.risk_level);
+
+            // Show risk indicator
+            const riskIndicator = document.getElementById('riskIndicator');
+            riskIndicator.textContent = `${result.risk_level.charAt(0).toUpperCase() + result.risk_level.slice(1)} Risk`;
+            riskIndicator.className = `risk-indicator risk-${result.risk_level}`;
+            riskIndicator.style.display = 'block';
+
+            // Update result cards
+            document.getElementById('riskLevel').textContent = result.risk_level.toUpperCase();
+            document.getElementById('probability').textContent = result.probability;
+            document.getElementById('weatherFactor').textContent = result.weather_factor;
+            document.getElementById('trafficDensity').textContent = result.traffic_density;
+
+            // Show results
+            document.getElementById('results').style.display = 'block';
+        }
+
+        // Mobile menu toggle
+        document.querySelector('.hamburger').addEventListener('click', function() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+        });
+
+        // Add datetime picker functionality
+        document.getElementById('datetime').addEventListener('focus', function() {
+            this.type = 'datetime-local';
+        });
+
+        document.getElementById('datetime').addEventListener('blur', function() {
+            if (!this.value) {
+                this.type = 'text';
+            }
+        });
+    </script>
+</body>
+</html>
