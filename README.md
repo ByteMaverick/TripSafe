@@ -71,7 +71,6 @@ Due to severe class imbalance in the original severity column (75% Severity 2), 
 - **Risk Level Assignment**: Based on mean severity, duration, and accident density
 
 ![Elbow Method for Optimal Clusters](docs/Elbow.png)
-![Original Severity Class Imbalance](docs/Smote.png)
 
 ### 4. Dimensionality Reduction
 - **Method**: Principal Component Analysis (PCA)
@@ -104,8 +103,7 @@ Tested multiple algorithms with GridSearchCV:
 - **Overfitting Check**: Nearly identical train/test accuracy
 - **Class Balance**: High precision/recall across all risk levels
 
-![Data Distribution Before and After SMOTE Sampling](images/smote.png)
-
+![Original Severity Class Imbalance](docs/Smote.png)
 ## 🎯 Business Applications
 
 ### Potential Integration
