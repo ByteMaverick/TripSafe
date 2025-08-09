@@ -1,7 +1,7 @@
 # TripSafe: Traffic Accident Risk Prediction
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-1.0+-orange.svg)
+![scikit-learn](https://img.shields.io/badge/scikitlearn-1.0+-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Accuracy](https://img.shields.io/badge/Accuracy-98%25-brightgreen.svg)
 
